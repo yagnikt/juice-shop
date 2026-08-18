@@ -13,11 +13,61 @@ import { challenges } from '../data/datacache'
 import * as security from '../lib/insecurity'
 import * as utils from '../lib/utils'
 
+function isSafeInput (input: string): boolean {
+  let unescaped = input.replace(/\\u\{([0-9a-fA-F]+)\}/g, (match, grp) => {
+    try {
+      return String.fromCodePoint(parseInt(grp, 16))
+    } catch {
+      return match
+    }
+  })
+  unescaped = unescaped.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
+    try {
+      return String.fromCharCode(parseInt(grp, 16))
+    } catch {
+      return match
+    }
+  })
+  unescaped = unescaped.replace(/\\x([0-9a-fA-F]{2})/g, (match, grp) => {
+    try {
+      return String.fromCharCode(parseInt(grp, 16))
+    } catch {
+      return match
+    }
+  })
+
+  const forbiddenPatterns = [
+    /Function/,
+    /eval/i,
+    /constructor/i,
+    /process/i,
+    /require/i,
+    /child_process/i,
+    /mainModule/i,
+    /exec/i,
+    /spawn/i,
+    /global/i,
+    /prototype/i,
+    /__proto__/i
+  ]
+
+  for (const pattern of forbiddenPatterns) {
+    if (pattern.test(unescaped)) {
+      return false
+    }
+  }
+
+  return true
+}
+
 export function b2bOrder () {
   return ({ body }: Request, res: Response, next: NextFunction) => {
     if (utils.isChallengeEnabled(challenges.rceChallenge) || utils.isChallengeEnabled(challenges.rceOccupyChallenge)) {
       const orderLinesData = body.orderLinesData || ''
       try {
+        if (!isSafeInput(orderLinesData)) {
+          throw new Error('Blocked: Potential sandbox escape or code injection detected!')
+        }
         const sandbox = { safeEval, orderLinesData }
         vm.createContext(sandbox)
         vm.runInContext('safeEval(orderLinesData)', sandbox, { timeout: 2000 })
