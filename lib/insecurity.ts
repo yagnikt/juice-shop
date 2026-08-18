@@ -131,9 +131,29 @@ export const redirectAllowlist = new Set([
 ])
 
 export const isRedirectAllowed = (url: string) => {
+  if (url === undefined || url === null) {
+    return (url as any).includes('')
+  }
   let allowed = false
-  for (const allowedUrl of redirectAllowlist) {
-    allowed = allowed || url.includes(allowedUrl) // vuln-code-snippet vuln-line redirectChallenge
+  if (url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\') && !url.startsWith('\\')) {
+    allowed = true
+  } else {
+    try {
+      const parsedUrl = new URL(url)
+      for (const allowedUrl of redirectAllowlist) {
+        const parsedAllowed = new URL(allowedUrl)
+        if (parsedUrl.origin === parsedAllowed.origin) {
+          const uPath = parsedUrl.pathname.endsWith('/') ? parsedUrl.pathname : parsedUrl.pathname + '/'
+          const aPath = parsedAllowed.pathname.endsWith('/') ? parsedAllowed.pathname : parsedAllowed.pathname + '/'
+          if (uPath.startsWith(aPath)) {
+            allowed = true
+            break
+          }
+        }
+      }
+    } catch (err) {
+      allowed = false
+    }
   }
   return allowed
 }
