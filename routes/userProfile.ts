@@ -62,6 +62,14 @@ export function getUserProfile () {
           if (!code) {
             throw new Error('Username is null')
           }
+          const dangerousKeywords = /\b(require|process|global|window|document|constructor|prototype|__proto__|Function|eval|exec|spawn|child_process|fs|os|path|Buffer|import|this|arguments|caller|callee|Symbol|Reflect|Proxy|Object|function|with)\b/i
+          const hasBrackets = /[\[\]]/.test(code)
+          const hasBackticks = /`/.test(code)
+          const hasArrow = /=>/.test(code)
+          const hasDotAccess = /(?<!\d)\.|\.(?!\d)/.test(code)
+          if (dangerousKeywords.test(code) || hasBrackets || hasBackticks || hasArrow || hasDotAccess) {
+            throw new Error('Blocked potential Remote Code Execution attempt')
+          }
           username = eval(code) // eslint-disable-line no-eval
         } catch (err) {
           username = '\\' + username
