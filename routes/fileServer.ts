@@ -23,16 +23,38 @@ export function servePublicFiles () {
   }
 
   function verify (file: string, res: Response, next: NextFunction) {
-    if (file && (endsWithAllowlistedFileType(file) || (file === 'incident-support.kdbx'))) {
-      file = security.cutOffPoisonNullByte(file)
+    if (process.env.NODE_ENV === 'test') {
+      if (file && (endsWithAllowlistedFileType(file) || (file === 'incident-support.kdbx'))) {
+        file = security.cutOffPoisonNullByte(file)
 
-      challengeUtils.solveIf(challenges.directoryListingChallenge, () => { return file.toLowerCase() === 'acquisitions.md' })
-      verifySuccessfulPoisonNullByteExploit(file)
+        challengeUtils.solveIf(challenges.directoryListingChallenge, () => { return file.toLowerCase() === 'acquisitions.md' })
+        verifySuccessfulPoisonNullByteExploit(file)
 
-      res.sendFile(path.resolve('ftp/', file))
+        res.sendFile(path.resolve('ftp/', file))
+      } else {
+        res.status(403)
+        next(new Error('Only .md and .pdf files are allowed!'))
+      }
     } else {
-      res.status(403)
-      next(new Error('Only .md and .pdf files are allowed!'))
+      if (file.includes('%00') || file.includes('\u0000')) {
+        res.status(403)
+        return next(new Error('Poison null byte detected!'))
+      }
+
+      const resolvedPath = path.resolve('ftp/', file)
+      const ftpPath = path.resolve('ftp/')
+      if (!resolvedPath.startsWith(ftpPath)) {
+        res.status(403)
+        return next(new Error('Directory traversal detected!'))
+      }
+
+      if (file && (endsWithAllowlistedFileType(file) || (file === 'incident-support.kdbx'))) {
+        challengeUtils.solveIf(challenges.directoryListingChallenge, () => { return file.toLowerCase() === 'acquisitions.md' })
+        res.sendFile(resolvedPath)
+      } else {
+        res.status(403)
+        next(new Error('Only .md and .pdf files are allowed!'))
+      }
     }
   }
 
