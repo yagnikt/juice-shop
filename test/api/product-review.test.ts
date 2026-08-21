@@ -62,25 +62,28 @@ void describe('/rest/products/:id/reviews', () => {
 
 void describe('/rest/products/reviews', () => {
   let reviewId: string
+  let reviewAuthor: string
 
   before(async () => {
     const res = await request(app)
       .get('/rest/products/1/reviews')
     const response = res.body
     reviewId = response.data[0]._id
+    reviewAuthor = response.data[0].author
   })
 
   void it('PATCH single product review can be edited', async () => {
+    const authorAuthHeader = { Authorization: `Bearer ${security.authorize({ data: { email: reviewAuthor } })}`, 'content-type': 'application/json' }
     const res = await request(app)
       .patch('/rest/products/reviews')
-      .set(authHeader)
+      .set(authorAuthHeader)
       .send({
         id: reviewId,
         message: 'Lorem Ipsum'
       })
     assert.equal(res.status, 200)
     assert.ok(res.headers['content-type']?.includes('application/json'))
-    assert.equal(typeof res.body.modified, 'number')
+    assert.equal(res.body.modified, 1)
     assert.ok(Array.isArray(res.body.original))
     assert.ok(Array.isArray(res.body.updated))
   })
@@ -123,9 +126,7 @@ void describe('/rest/products/reviews', () => {
     assert.equal(res.status, 200)
   })
 
-  void it('PATCH multiple product review via injection', async () => {
-    const totalReviews = config.get<Product[]>('products').reduce((sum: number, { reviews = [] }: any) => sum + reviews.length, 1)
-
+  void it('PATCH multiple product review via injection is blocked', async () => {
     const res = await request(app)
       .patch('/rest/products/reviews')
       .set(authHeader)
@@ -133,11 +134,6 @@ void describe('/rest/products/reviews', () => {
         id: { $ne: -1 },
         message: 'trololololololololololololololololololololololololololol'
       })
-    assert.equal(res.status, 200)
-    assert.ok(res.headers['content-type']?.includes('application/json'))
-    assert.equal(typeof res.body.modified, 'number')
-    assert.ok(Array.isArray(res.body.original))
-    assert.ok(Array.isArray(res.body.updated))
-    assert.equal(res.body.modified, totalReviews)
+    assert.equal(res.status, 400)
   })
 })
