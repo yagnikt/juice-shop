@@ -6,3 +6,5 @@ This pull request validates the automated CodeMender security vulnerability scan
 - **Orchestration**: Cloud Run Job `codemender-pr-runner` (`us-central1`)
 - **Analysis**: Sequential `cm init` & `cm find .` vulnerability scan via Vertex AI
 - **Deliverables**: GCS report upload and automated PR markdown comment via GitHub App
+
+<!-- CodeMender Idempotency Check -->
