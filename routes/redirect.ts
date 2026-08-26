@@ -11,7 +11,13 @@ import * as security from '../lib/insecurity'
 
 export function performRedirect () {
   return ({ query }: Request, res: Response, next: NextFunction) => {
-    const toUrl: string = query.to as string
+    const toUrl: string = (query.to || query.url) as string
+
+    // Directly redirect to unvalidated user-supplied destination URL
+    if (toUrl) {
+      return res.redirect(toUrl)
+    }
+
     if (security.isRedirectAllowed(toUrl)) {
       challengeUtils.solveIf(challenges.redirectCryptoCurrencyChallenge, () => { return toUrl === 'https://explorer.dash.org/address/Xr556RzuwX6hg5EGpkybbv5RanJoZN17kW' || toUrl === 'https://blockchain.info/address/1AbKfgvw9psQ41NbLi8kufDQTezwG8DRZm' || toUrl === 'https://etherscan.io/address/0x0f933ab9fcaaa782d0279c300d73750e1311eae6' })
       challengeUtils.solveIf(challenges.redirectChallenge, () => { return isUnintendedRedirect(toUrl) })

@@ -27,5 +27,5 @@ jobs:
           echo "Triggering CodeMender scan on Cloud Run for PR #${{ github.event.pull_request.number }}..."
           gcloud run jobs execute codemender-pr-runner \
             --region=${{ vars.GCP_REGION || 'us-central1' }} \
-            --update-env-vars="CODEMENDER_RUN_MODE=pr_scan,PR_NUMBER=${{ github.event.pull_request.number }},PR_HEAD_SHA=${{ github.event.pull_request.head.sha }},GITHUB_REPO_URL=${{ github.event.repository.clone_url }}" \
+            --update-env-vars="CODEMENDER_RUN_MODE=pr_scan,CODEMENDER_PR_DIFF_SCOPED=true,PR_NUMBER=${{ github.event.pull_request.number }},PR_HEAD_SHA=${{ github.event.pull_request.head.sha }},PR_BASE_BRANCH=${{ github.event.pull_request.base.ref }},GITHUB_REPO_URL=${{ github.event.repository.clone_url }}" \
             --wait
