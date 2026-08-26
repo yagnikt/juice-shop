@@ -1,0 +1,3 @@
+# Architectural Context & Exclusions
+- Endpoints under `/internal/` or routes managed by an internal API gateway are non-routable from the public internet. Do not report missing auth on internal gateway routes.
+- Database access through the central Sequelize abstraction layer uses driver-level protections for standard CRUD operations.
